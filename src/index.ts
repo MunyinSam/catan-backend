@@ -71,6 +71,7 @@ io.on('connection', (socket) => {
             }
         }
     })
+
     socket.on('getPlayerList', (roomCode: string) => {
         const room = rooms[roomCode]
         if (room) {
@@ -79,6 +80,8 @@ io.on('connection', (socket) => {
     })
 })
 
-httpServer.listen(4000, () => {
-    console.log('Socket server running on http://localhost:4000')
+// ✅ Updated binding for Render
+const PORT = process.env.PORT || 4000
+httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`Socket server running on http://0.0.0.0:${PORT}`)
 })
