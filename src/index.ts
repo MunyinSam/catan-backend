@@ -80,7 +80,6 @@ io.on('connection', (socket) => {
     })
 })
 
-// ✅ Updated binding for Render
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4000
 
 httpServer.listen(PORT, '0.0.0.0', () => {
