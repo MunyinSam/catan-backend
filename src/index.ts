@@ -36,6 +36,7 @@ io.on('connection', (socket) => {
         rooms[roomCode] = { players: [socket.id] }
         socket.join(roomCode)
         socket.emit('gameCreated', roomCode)
+        console.log(rooms)
         io.to(roomCode).emit('playerList', rooms[roomCode].players)
         console.log('Game created:', roomCode)
     })
@@ -68,6 +69,12 @@ io.on('connection', (socket) => {
             if (room.players.length === 0) {
                 delete rooms[roomCode]
             }
+        }
+    })
+    socket.on('getPlayerList', (roomCode: string) => {
+        const room = rooms[roomCode]
+        if (room) {
+            socket.emit('playerList', room.players)
         }
     })
 })
