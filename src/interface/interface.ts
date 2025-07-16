@@ -1,4 +1,15 @@
-interface Player {
+export type MaterialType = 'wood' | 'brick' | 'wheat' | 'sheep' | 'ore' | 'desert'
+
+export interface HexTile {
+    id: number
+    materialType: MaterialType
+    rollNumber: number | null
+    x: number
+    y: number
+}
+
+
+export interface Player {
     id: string
     name: string
     color: string
@@ -30,6 +41,8 @@ interface Player {
     buildings: Building[]     // List of roads/houses/mansions with positions
     isMyTurn: boolean
 
+    isReady: boolean
+
 }
 
 export type BuildingType = 'road' | 'settlement' | 'city'
@@ -40,38 +53,11 @@ export interface Building {
     connectedTo?: number[][]    // For roads (from → to)
 }
 
-
-export function createDefaultPlayer(id: string, name: string): Player {
-    return {
-        id,
-        name,
-        color: null as any,
-
-        resources: {
-            wood: 0,
-            brick: 0,
-            wheat: 0,
-            sheep: 0,
-            ore: 0,
-        },
-
-        devCards: [],
-        newDevCards: [],
-        playedDevCard: false,
-
-        points: 0,
-        knightsPlayed: 0,
-        hasLongestRoad: false,
-        hasLargestArmy: false,
-
-        longestRoad: 0,
-
-        invRoad: 15,
-        invSettlement: 5,
-        invCity: 4,
-
-        buildings: [],
-
-        isMyTurn: false,
-    }
+export interface Room {
+    players: Player[]
+    // add more room properties as needed, e.g.:
+    gameState?: any
+    createdAt?: number
+    board?: HexTile[]
+    // etc.
 }

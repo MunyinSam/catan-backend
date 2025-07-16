@@ -1,6 +1,8 @@
 import { Server, Socket } from 'socket.io'
-import { generateRoomCode, rooms, Room, Player } from '../roomManager/room'
-import { createDefaultPlayer } from '../createDefaultPlayer'
+import { generateRoomCode, rooms } from '../lobby/room'
+import { createDefaultPlayer } from '../lobby/createDefaultPlayer'
+import { Room, Player } from '../../interface/interface'
+import { generateFullBoard } from '../game/generateFullBoard'
 
 export function registerSocketHandlers(io: Server, socket: Socket) {
     socket.on('createGame', (playerName: string) => {
@@ -15,7 +17,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     socket.on('joinGame', (roomCode: string, playerName: string) => {
         const room = rooms[roomCode] // room is string array
         if (room && room.players.length < 6) {
-        const player: Player = createDefaultPlayer(socket.id, playerName)
+            const player: Player = createDefaultPlayer(socket.id, playerName)
             room.players.push(player)
             socket.join(roomCode)
             socket.emit('joinedGame', roomCode)
@@ -28,7 +30,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
 
     socket.on('disconnect', () => {
         for (const [roomCode, room] of Object.entries(rooms)) {
-            const index = room.players.findIndex(p => p.id === socket.id)
+            const index = room.players.findIndex((p) => p.id === socket.id)
             if (index !== -1) {
                 room.players.splice(index, 1)
                 io.to(roomCode).emit('playerList', room.players)
@@ -51,5 +53,29 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
         if (room) {
             socket.emit('roomInfo', room)
         }
+    })
+
+    socket.on('playerReady', (roomCode: string) => {
+        const room = rooms[roomCode]
+        if (!room) return
+
+        const player = room.players.find((p) => p.id === socket.id)
+        if (player) {
+            player.isReady = true
+            io.to(roomCode).emit('playerList', room.players)
+
+            // Check if all players are ready
+            const allReady =
+                room.players.length > 0 && room.players.every((p) => p.isReady)
+            if (allReady) {
+                io.to(roomCode).emit('allPlayerReady') // trigger frontend to start game
+            }
+        }
+    })
+
+    socket.on('gameStart', (roomCode) => {
+        const board = generateFullBoard()
+        rooms[roomCode].board = board
+        io.to(roomCode).emit('gameStart', board)
     })
 }
