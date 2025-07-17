@@ -22,7 +22,7 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
             createdAt: Date.now(),
             currentTurnIndex: 0,
             ports: ports,
-            robberTileId: null
+            robberTileId: null,
         }
         io.to(roomCode).emit('portsGenerated', ports)
         socket.join(roomCode)
@@ -244,6 +244,26 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
             tileId,
             playerId,
             log,
+        })
+    })
+
+    socket.on('updateResources', ({ roomCode, playerId, resources }) => {
+        const room = rooms[roomCode]
+        if (!room) {
+            console.error(`Room not found: ${roomCode}`)
+            socket.emit('error', { message: 'Room not found.' })
+            return
+        }
+        const player = room.players.find((p) => p.id === playerId)
+        if (!player) {
+            console.error(`Player not found: ${playerId} in room: ${roomCode}`)
+            socket.emit('error', { message: 'Player not found.' })
+            return
+        }
+        player.resources = resources
+        io.to(roomCode).emit('resourcesUpdated', {
+            playerId,
+            resources,
         })
     })
 }
