@@ -7,10 +7,10 @@ export function createDefaultPlayer(id: string, name: string, color: string): Pl
         color: color,
 
         resources: {
-            wood: 0,
-            brick: 0,
-            wheat: 0,
-            sheep: 0,
+            wood: 4,
+            brick: 4,
+            wheat: 2,
+            sheep: 2,
             ore: 0,
         },
 
@@ -24,6 +24,7 @@ export function createDefaultPlayer(id: string, name: string, color: string): Pl
         hasLargestArmy: false,
 
         longestRoad: 0,
+        robberUsed: 0,
 
         invRoad: 15,
         invSettlement: 5,

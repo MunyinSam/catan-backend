@@ -2,7 +2,7 @@ import { Server, Socket } from 'socket.io'
 import { generateRoomCode, rooms } from '../lobby/room'
 import { createDefaultPlayer } from '../lobby/createDefaultPlayer'
 import { Room, Player, Road, Settlement, City } from '../../interface/interface'
-import { generateFullBoard } from '../game/generateFullBoard'
+import { generateFullBoard, generatePorts } from '../game/game'
 import { playerColors } from '../../constant/colors'
 
 function getNextColor(usedColors: string[]) {
@@ -16,11 +16,15 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
         const roomCode = generateRoomCode()
         const color = getNextColor([])
         const player: Player = createDefaultPlayer(socket.id, playerName, color)
+        const ports = generatePorts()
         rooms[roomCode] = {
             players: [player],
             createdAt: Date.now(),
             currentTurnIndex: 0,
+            ports: ports,
+            robberTileId: null
         }
+        io.to(roomCode).emit('portsGenerated', ports)
         socket.join(roomCode)
         socket.emit('gameCreated', roomCode)
         io.to(roomCode).emit('playerList', rooms[roomCode].players)
@@ -145,5 +149,101 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
 
     socket.on('resourceLog', (msg) => {
         socket.broadcast.emit('resourceLog', msg)
+    })
+
+    socket.on('getPorts', (roomCode) => {
+        const room = rooms[roomCode]
+        if (room) {
+            socket.emit('portsGenerated', room.ports)
+        } else {
+            console.error(`Room not found for code: ${roomCode}`)
+            socket.emit('error', { message: 'Room not found.' })
+        }
+    })
+    socket.on('devCardUpdate', ({ roomCode, playerId, devCards }) => {
+        const room = rooms[roomCode]
+        if (!room) return
+
+        const player = room.players.find((p) => p.id === playerId)
+        if (player) {
+            player.devCards = devCards // ✅ update server-side player data
+            io.to(roomCode).emit('devCardUpdate', { playerId, devCards }) // broadcast to update clients
+        }
+    })
+
+    socket.on('updatePoints', ({ roomCode, playerId, points }) => {
+        const room = rooms[roomCode]
+
+        if (!room) {
+            console.error(`Room not found: ${roomCode}`)
+            socket.emit('error', { message: 'Room not found.' })
+            return
+        }
+
+        const player = room.players.find((p) => p.id === playerId)
+
+        if (!player) {
+            console.error(`Player not found: ${playerId} in room: ${roomCode}`)
+            socket.emit('error', { message: 'Player not found.' })
+            return
+        }
+
+        player.points = points
+        io.to(roomCode).emit('pointsUpdated', {
+            playerId,
+            points,
+        })
+    })
+
+    socket.on('updateLongestRoad', ({ roomCode, playerId, longestRoad }) => {
+        // Update player in memory/database
+        const room = rooms[roomCode]
+        const player = room?.players.find((p) => p.id === playerId)
+        if (player) {
+            player.longestRoad = longestRoad
+            io.to(roomCode).emit('longestRoadUpdated', {
+                playerId,
+                roadLength: longestRoad,
+            })
+        }
+    })
+
+    socket.on('updateRobberUsed', ({ roomCode, playerId, robberUsed }) => {
+        const room = rooms[roomCode]
+
+        if (!room) {
+            console.error(`Room not found: ${roomCode}`)
+            socket.emit('error', { message: 'Room not found.' })
+            return
+        }
+
+        const player = room.players.find((p) => p.id === playerId)
+
+        if (!player) {
+            console.error(`Player not found: ${playerId} in room: ${roomCode}`)
+            socket.emit('error', { message: 'Player not found.' })
+            return
+        }
+
+        player.robberUsed = robberUsed // Corrected field assignment
+        io.to(roomCode).emit('robberUsedUpdated', {
+            playerId,
+            robberUsed,
+        })
+    })
+
+    socket.on('robberPlaced', ({ roomCode, tileId, playerId, log }) => {
+        const room = rooms[roomCode]
+        if (!room) return
+
+        // Optional: Save robber position in the room state
+        room.robberTileId = tileId
+
+        // Broadcast to everyone in the room
+        io.to(roomCode).emit('robberPlacedBroadcast', {
+            tileId,
+            playerId,
+            log,
+        })
     })
 }

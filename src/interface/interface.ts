@@ -32,6 +32,7 @@ export interface Player {
     hasLargestArmy: boolean
 
     longestRoad: number
+    robberUsed: number
 
     invRoad: number
     invSettlement: number
@@ -59,6 +60,8 @@ export interface Room {
     createdAt?: number
     board?: HexTile[]
     currentTurnIndex: number, // start with player 0
+    ports: Port[],
+    robberTileId: number | null
     // etc.
 }
 
@@ -76,4 +79,12 @@ export type Settlement = {
 export type City = {
     position: { x: number; y: number }
     ownerId: string
+}
+
+export type ResourceType = 'brick' | 'wood' | 'ore' | 'wheat' | 'sheep'
+export type Port = {
+    x: number
+    y: number
+    ratio: '2:1' | '3:1'
+    resource: ResourceType | null
 }
