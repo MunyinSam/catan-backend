@@ -1,10 +1,10 @@
 import { Player, Building } from '../../interface/interface'
 
-export function createDefaultPlayer(id: string, name: string): Player {
+export function createDefaultPlayer(id: string, name: string, color: string): Player {
     return {
         id,
         name,
-        color: null as any,
+        color: color,
 
         resources: {
             wood: 0,

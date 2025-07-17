@@ -8,7 +8,6 @@ export interface HexTile {
     y: number
 }
 
-
 export interface Player {
     id: string
     name: string
@@ -59,5 +58,6 @@ export interface Room {
     gameState?: any
     createdAt?: number
     board?: HexTile[]
+    currentTurnIndex: number, // start with player 0
     // etc.
 }

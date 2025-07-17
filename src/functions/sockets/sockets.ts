@@ -3,12 +3,24 @@ import { generateRoomCode, rooms } from '../lobby/room'
 import { createDefaultPlayer } from '../lobby/createDefaultPlayer'
 import { Room, Player } from '../../interface/interface'
 import { generateFullBoard } from '../game/generateFullBoard'
+import { playerColors } from '../../constant/colors'
+
+function getNextColor(usedColors: string[]) {
+    return (
+        playerColors.find((color) => !usedColors.includes(color)) || '#000000'
+    )
+}
 
 export function registerSocketHandlers(io: Server, socket: Socket) {
     socket.on('createGame', (playerName: string) => {
         const roomCode = generateRoomCode()
-        const player: Player = createDefaultPlayer(socket.id, playerName)
-        rooms[roomCode] = { players: [player], createdAt: Date.now() }
+        const color = getNextColor([])
+        const player: Player = createDefaultPlayer(socket.id, playerName, color)
+        rooms[roomCode] = {
+            players: [player],
+            createdAt: Date.now(),
+            currentTurnIndex: 0,
+        }
         socket.join(roomCode)
         socket.emit('gameCreated', roomCode)
         io.to(roomCode).emit('playerList', rooms[roomCode].players)
@@ -17,7 +29,13 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     socket.on('joinGame', (roomCode: string, playerName: string) => {
         const room = rooms[roomCode] // room is string array
         if (room && room.players.length < 6) {
-            const player: Player = createDefaultPlayer(socket.id, playerName)
+            const usedColors = room.players.map((p) => p.color)
+            const color = getNextColor(usedColors)
+            const player: Player = createDefaultPlayer(
+                socket.id,
+                playerName,
+                color
+            )
             room.players.push(player)
             socket.join(roomCode)
             socket.emit('joinedGame', roomCode)
@@ -75,7 +93,57 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
 
     socket.on('gameStart', (roomCode) => {
         const board = generateFullBoard()
-        rooms[roomCode].board = board
+        const room = rooms[roomCode]
+        if (!room) return
+        room.board = board
+        room.currentTurnIndex = 0 // start at player 0's turn
         io.to(roomCode).emit('gameStart', board)
+        io.to(roomCode).emit('turnChanged', room.currentTurnIndex)
+    })
+
+    socket.on('diceRoll', ({ roomCode, rolls }) => {
+        console.log(`Room ${roomCode} rolled ${rolls[0]} and ${rolls[1]}`)
+        io.to(roomCode).emit('updateDiceRoll', rolls)
+    })
+
+    socket.on('getPlayer', ({ roomCode }) => {
+        const room = rooms[roomCode]
+        if (!room) return
+
+        const player = room.players.find((p) => p.id === socket.id)
+        if (player) {
+            socket.emit('yourPlayer', player.name)
+        }
+    })
+
+    socket.on('endTurn', (roomCode) => {
+        const room = rooms[roomCode]
+        if (!room) return
+
+        // Advance turn index
+        room.currentTurnIndex =
+            (room.currentTurnIndex + 1) % room.players.length
+
+        // Broadcast new turn to all players
+        io.to(roomCode).emit('turnChanged', room.currentTurnIndex)
+    })
+
+    socket.on('buildRoad', ({ roomCode, road }) => {
+        // Optionally: Validate road data here
+
+        // Broadcast to other clients in the room
+        socket.to(roomCode).emit('roadBuilt', { road })
+    })
+
+    socket.on('buildSettlement', ({ roomCode, settlement }) => {
+        socket.to(roomCode).emit('settlementBuilt', { settlement })
+    })
+
+    socket.on('buildCity', ({ roomCode, city }) => {
+        socket.to(roomCode).emit('roadCity', { city })
+    })
+
+    socket.on('resourceLog', (msg) => {
+        socket.broadcast.emit('resourceLog', msg)
     })
 }
