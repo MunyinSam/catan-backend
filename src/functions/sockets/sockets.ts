@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io'
 import { generateRoomCode, rooms } from '../lobby/room'
 import { createDefaultPlayer } from '../lobby/createDefaultPlayer'
-import { Room, Player } from '../../interface/interface'
+import { Room, Player, Road, Settlement, City } from '../../interface/interface'
 import { generateFullBoard } from '../game/generateFullBoard'
 import { playerColors } from '../../constant/colors'
 

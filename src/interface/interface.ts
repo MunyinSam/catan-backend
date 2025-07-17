@@ -61,3 +61,19 @@ export interface Room {
     currentTurnIndex: number, // start with player 0
     // etc.
 }
+
+export type Road = {
+    start: { x: number; y: number }
+    end: { x: number; y: number }
+    ownerId: string
+}
+
+export type Settlement = {
+    position: { x: number; y: number }
+    ownerId: string
+}
+
+export type City = {
+    position: { x: number; y: number }
+    ownerId: string
+}
